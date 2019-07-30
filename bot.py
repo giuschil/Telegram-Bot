@@ -8,7 +8,6 @@ import telebot
 from flask import Flask, request
 import os
 TOKEN = "922313704:AAE2kP50fwYr_0M0mYelXsumREUyMgdkiTM"
-"
 bot = telebot.TeleBot(token=TOKEN)
 server = Flask(__name__)
 def findat(msg):
