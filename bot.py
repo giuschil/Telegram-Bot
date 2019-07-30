@@ -4,43 +4,50 @@ Created on Mon Jul 22 11:18:37 2019
 
 @author: giuse
 """
-import tweepy  
-import telepot
-from twitter_app_credentials import *
+import telebot
+from flask import Flask, request
+import os
+TOKEN = "922313704:AAE2kP50fwYr_0M0mYelXsumREUyMgdkiTM"
+"
+bot = telebot.TeleBot(token=TOKEN)
+server = Flask(__name__)
+def findat(msg):
+    # from a list of texts, it finds the one with the '@' sign
+    for i in msg:
+        if '@' in i:
+            return i
 
-def OAuth():
-    try:
-        auth= tweepy.OAuthHandler(consumer_key,consumer_secret)
-        auth.set_access_token(access_token,access_token_secret)
-        return auth 
-    except Exception as e:
-        return None
-    
-oauth= OAuth()
-api = tweepy.API(oauth)
-bot = telepot.Bot(TOKEN_giuschilbot)
+@bot.message_handler(commands=['start']) # welcome message handler
+def send_welcome(message):
+    bot.reply_to(message, '(placeholder text)')
 
-def send_tweet():
-    public_tweets = tweepy.Cursor(api.search,q=("inter","calciomercato"),result_type="mixed",tweet_mode="extended").items(10)
-    return public_tweets
-    
-def on_chat_message(msg):
-    content_type, chat_type, chat_id = telepot.glance(msg)
-    if content_type == 'text':
-        bot.sendMessage(chat_id, 'Ciao sono un bot stupido questi sono gli utlimi tweet: ')
-        for tweet in public_tweets:
-            tweet_text = tweet.full_text
-            bot.sendMessage(chat_id,tweet_text)
-        
+@bot.message_handler(commands=['help']) # help message handler
+def send_welcome(message):
+    bot.reply_to(message, 'ALPHA = FEATURES MAY NOT WORK')
 
-bot = telepot.Bot(TOKEN_giuschilbot)
-bot.message_loop(on_chat_message)
+@bot.message_handler(func=lambda msg: msg.text is not None and '@' in msg.text)
+# lambda function finds messages with the '@' sign in them
+# in case msg.text doesn't exist, the handler doesn't process it
+def at_converter(message):
+    texts = message.text.split()
+    at_text = findat(texts)
+    if at_text == '@': # in case it's just the '@', skip
+        pass
+    else:
+        insta_link = "https://instagram.com/{}".format(at_text[1:])
+        bot.reply_to(message, insta_link)
+@server.route('/' + TOKEN, methods=['POST'])
+def getMessage():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "!", 200
 
-print ('Listening ...')
-import time
-while 1:
-    time.sleep(10) 
 
-     
+@server.route("/")
+def webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url='https://tranquil-lake-39332.herokuapp.com/' + TOKEN)
+    return "!", 200
 
-    
+
+if __name__ == "__main__":
+    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
